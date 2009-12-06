@@ -13,12 +13,19 @@ var game = Class.create({
     },
    
     main: function() {
-        this.arena1 = new arena(this.ctx, this.canvas.width, this.canvas.height);
-        for (var i = 0; i < 75; i++) {
+        this.arena1 = new arena(this.ctx, this.canvas.width,
+                                this.canvas.height);
+        for (var i = 0; i < 100; i++) {
             var x = Math.floor(Math.random() * (this.arena1.width - 10));
-            //var y = Math.floor(Math.random() * (this.arena1.height - 20)) + 10;
-            var y = this.arena1.height - 10;
-            var item1 = new item(x, y);
+            var y = Math.floor(Math.random() * (this.arena1.height - 20)) + 10;
+
+            var item1;
+            if (Math.random() < .5) {
+                item1 = new circle(x, y);
+            } else {
+                item1 = new square(x, y);
+            }
+            
             this.arena1.add_item(item1);
         }
     
@@ -54,9 +61,10 @@ var arena = Class.create({
     },
 
     draw: function() {
-        for (var i in this.items) {
-            this.items[i].draw(this.ctx);
-        }
+        var myctx = this.ctx;
+        this.items.each(function(myitem) {
+            myitem.draw(myctx);
+        });
     },
 
     motion: function() {
@@ -83,11 +91,9 @@ var item = Class.create({
         this.arena = null;
         this.gravity_accel = 1.15;
         this.negligible_vely = .3;
-    },
-
-    draw: function(ctx) {
-        ctx.fillStyle = "rgb(200,0,0)";
-        ctx.fillRect(this.x, this.y, 10, 10);
+        this.red = Math.floor(Math.random() * 255);
+        this.blue = Math.floor(Math.random() * 255);
+        this.green = Math.floor(Math.random() * 255);
     },
 
     motion: function() {
@@ -146,5 +152,35 @@ var item = Class.create({
 
     gety: function() {
         return this.y;
+    },
+    
+    getrgb: function() {
+        return "rgb(" + this.red + "," + this.blue + "," + this.green + ")";
+    }
+});
+
+var square = Class.create(item, {
+    initialize: function($super, x, y) {
+        $super(x, y);
+    },
+    
+    draw: function(ctx) {
+        ctx.fillStyle = this.getrgb();
+        ctx.fillRect(this.x, this.y, 10, 10);
+    }
+});
+
+var circle = Class.create(item, {
+    initialize: function($super, x, y) {
+        $super(x, y);
+        this.radius = this.width / 2;
+    },
+    
+    draw: function(ctx) {
+        ctx.fillStyle = this.getrgb();
+        ctx.beginPath();
+        ctx.arc(this.x + this.radius, this.y + this.radius, this.radius,
+                0, 2 * Math.PI, false);
+        ctx.fill();
     }
 });
