@@ -11,21 +11,25 @@ function game() {
     this.ctx = this.canvas.getContext("2d");
    
     this.main = function() {
-        this.room1 = new room(this.ctx, this.canvas.width, this.canvas.height);
-        var item1 = new item(20, 20);
-        this.room1.add_item(item1);
+        this.arena1 = new arena(this.ctx, this.canvas.width, this.canvas.height);
+        for (var i = 0; i < 50; i++) {
+            var x = Math.floor(Math.random() * (this.arena1.width - 10));
+            var y = Math.floor(Math.random() * (this.arena1.height - 20)) + 10;
+            var item1 = new item(x, y);
+            this.arena1.add_item(item1);
+        }
     
         setInterval("game1.draw()", 1000 / this.fps);
     }
     
     this.draw = function() {
-        this.room1.gravity();
+        this.arena1.gravity();
         this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
-        this.room1.draw();
+        this.arena1.draw();
     }
 }
 
-function room(ctx, width, height) {
+function arena(ctx, width, height) {
     this.ctx = ctx;
     this.width = width;
     this.height = height;
@@ -33,9 +37,11 @@ function room(ctx, width, height) {
 
     this.add_item = function(item) {
         this.items.push(item);
+        item.arena = this;
     }
 
     this.rm_item = function(item) {
+        item.arena = null;
         var idx = this.items.indexOf(item);
         if (idx) {
             this.items.splice(idx, 1);
@@ -64,10 +70,14 @@ function room(ctx, width, height) {
 }
 
 function item(x, y) {
+    this.gravity_accel = 1.15;
     this.x = x;
     this.y = y;
-    this.velx;
-    this.vely;
+    this.velx = .1;
+    this.vely = .1;
+    this.width = 10;
+    this.height = 10;
+    this.arena = null;
 
     this.draw = function(ctx) {
         ctx.fillStyle = "rgb(200,0,0)";
@@ -75,7 +85,10 @@ function item(x, y) {
     }
 
     this.gravity = function() {
-        this.y = this.y + 2;
+        this.vely *= this.gravity_accel;
+        this.y += this.vely;
+        if (this.y >= this.arena.height - this.height)
+            this.y = this.arena.height - this.height;
     }
 
     this.getx = function() {
