@@ -3,14 +3,16 @@ function main() {
     game1.main();
 }
 
-function game() {
-    this.fps = 30;
+var game = Class.create({
+    initialize: function() {
+        this.fps = 30;
     
-    //get canvas element and context
-    this.canvas = document.getElementById("canvas");
-    this.ctx = this.canvas.getContext("2d");
+        //get canvas element and context
+        this.canvas = document.getElementById("canvas");
+        this.ctx = this.canvas.getContext("2d");
+    },
    
-    this.main = function() {
+    main: function() {
         this.arena1 = new arena(this.ctx, this.canvas.width, this.canvas.height);
         for (var i = 0; i < 75; i++) {
             var x = Math.floor(Math.random() * (this.arena1.width - 10));
@@ -21,70 +23,74 @@ function game() {
         }
     
         setInterval("game1.draw()", 1000 / this.fps);
-    }
+    },
     
-    this.draw = function() {
+    draw: function() {
         this.arena1.motion();
         this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
         this.arena1.draw();
     }
-}
+});
 
-function arena(ctx, width, height) {
-    this.ctx = ctx;
-    this.width = width;
-    this.height = height;
-    this.items = new Array();
+var arena = Class.create({
+    initialize: function(ctx, width, height) {
+        this.ctx = ctx;
+        this.width = width;
+        this.height = height;
+        this.items = new Array();
+    },
 
-    this.add_item = function(myitem) {
+    add_item: function(myitem) {
         this.items.push(myitem);
         myitem.arena = this;
-    }
+    },
 
-    this.rm_item = function(myitem) {
+    rm_item: function(myitem) {
         myitem.arena = null;
         var idx = this.items.indexOf(myitem);
         if (idx != undefined) {
             this.items.splice(idx, 1);
         }
-    }
+    },
 
-    this.draw = function() {
+    draw: function() {
         for (var i in this.items) {
             this.items[i].draw(this.ctx);
         }
-    }
+    },
 
-    this.motion = function() {
-        for (var i in this.items) {
-            this.items[i].motion();
+    motion: function() {
+        this.items.each(function(myitem) {
+            myitem.motion();
 
             //remove items that are off the canvas
-            if (this.items[i].getx() > this.width ||
-                this.items[i].gety() > this.height) {
-                this.rm_item(this.items[i]);
+            if (myitem.getx() > this.width ||
+                myitem.gety() > this.height) {
+                this.rm_item(myitem);
             }
-        }
+        });
     }
-}
+});
 
-function item(x, y) {
-    this.x = x;
-    this.y = y;
-    this.velx = .1;
-    this.vely = .1;
-    this.width = 10;
-    this.height = 10;
-    this.arena = null;
-    const gravity_accel = 1.15;
-    const negligible_vely = .3;
+var item = Class.create({
+    initialize: function(x, y) {
+        this.x = x;
+        this.y = y;
+        this.velx = .1;
+        this.vely = .1;
+        this.width = 10;
+        this.height = 10;
+        this.arena = null;
+        this.gravity_accel = 1.15;
+        this.negligible_vely = .3;
+    },
 
-    this.draw = function(ctx) {
+    draw: function(ctx) {
         ctx.fillStyle = "rgb(200,0,0)";
         ctx.fillRect(this.x, this.y, 10, 10);
-    }
+    },
 
-    this.motion = function() {
+    motion: function() {
         this.gravity();
         
         this.y += this.vely;
@@ -107,38 +113,38 @@ function item(x, y) {
             this.x = 0;
             this.velx *= -1;
         }
-    }
+    },
 
-    this.gravity = function() {
+    gravity: function() {
         //inflict gravity
         var absvely = Math.abs(this.vely);
-        var delta_y = Math.abs(absvely - (absvely * gravity_accel));
+        var delta_y = Math.abs(absvely - (absvely * this.gravity_accel));
         this.vely += delta_y;
 
         //handle the apex of a bounce
-        if (Math.abs(this.vely) <= negligible_vely)
-            this.vely = negligible_vely;
-    }
+        if (Math.abs(this.vely) <= this.negligible_vely)
+            this.vely = this.negligible_vely;
+    },
     
     //set random +y velocity, random +/-x velocity
-    this.bounce = function() {
+    bounce: function() {
         this.setvely(Math.random() * -75);
         this.setvelx((Math.random() * 10) - 5);
-    }    
+    },
 
-    this.setvely = function(vely) {
+    setvely: function(vely) {
         this.vely = vely;
-    }
+    },
     
-    this.setvelx = function(velx) {
+    setvelx: function(velx) {
         this.velx = velx;
-    }
+    },
 
-    this.getx = function() {
+    getx: function() {
         return this.x;
-    }
+    },
 
-    this.gety = function() {
+    gety: function() {
         return this.y;
     }
-}
+});
