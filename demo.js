@@ -69,7 +69,6 @@ function arena(ctx, width, height) {
 }
 
 function item(x, y) {
-    this.gravity_accel = 1.15;
     this.x = x;
     this.y = y;
     this.velx = .1;
@@ -77,6 +76,8 @@ function item(x, y) {
     this.width = 10;
     this.height = 10;
     this.arena = null;
+    const gravity_accel = 1.15;
+    const negligible_vely = .3;
 
     this.draw = function(ctx) {
         ctx.fillStyle = "rgb(200,0,0)";
@@ -89,16 +90,19 @@ function item(x, y) {
         this.y += this.vely;
         this.x += this.velx;
         
+        //randomly bounce off the bottom
         if (this.y >= this.arena.height - this.height) {
             this.y = this.arena.height - this.height;
             this.bounce();
         }
         
+        //bounce off right wall
         if (this.x >= this.arena.width - this.width) {
             this.x = this.arena.width - this.width;
             this.velx *= -1;
         }
         
+        //bounce off left wall
         if (this.x <= 0) {
             this.x = 0;
             this.velx *= -1;
@@ -106,14 +110,17 @@ function item(x, y) {
     }
 
     this.gravity = function() {
+        //inflict gravity
         var absvely = Math.abs(this.vely);
-        var delta_y = Math.abs(absvely - (absvely * this.gravity_accel));
+        var delta_y = Math.abs(absvely - (absvely * gravity_accel));
         this.vely += delta_y;
 
-        if (Math.abs(this.vely) <= .3)
-            this.vely = .3;
+        //handle the apex of a bounce
+        if (Math.abs(this.vely) <= negligible_vely)
+            this.vely = negligible_vely;
     }
     
+    //set random +y velocity, random +/-x velocity
     this.bounce = function() {
         this.setvely(Math.random() * -75);
         this.setvelx((Math.random() * 10) - 5);
