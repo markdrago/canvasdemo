@@ -16,14 +16,11 @@ var game = Class.create({
         this.arena1 = new arena(this.ctx, this.canvas.width,
                                 this.canvas.height);
         for (var i = 0; i < 100; i++) {
-            var x = Math.floor(Math.random() * (this.arena1.width - 10));
-            var y = Math.floor(Math.random() * (this.arena1.height - 20)) + 10;
-
             var item1;
             if (Math.random() < .5) {
-                item1 = new circle(x, y);
+                item1 = new circle();
             } else {
-                item1 = new square(x, y);
+                item1 = new square();
             }
             
             this.arena1.add_item(item1);
@@ -45,11 +42,13 @@ var arena = Class.create({
         this.width = width;
         this.height = height;
         this.items = new Array();
+        this.gravity_accel = 1.15;
+        this.negligible_vely = .3;
     },
 
-    add_item: function(myitem) {
+    add_item: function(myitem, x, y) {
         this.items.push(myitem);
-        myitem.arena = this;
+        myitem.add_to_arena(this, x, y);
     },
 
     rm_item: function(myitem) {
@@ -81,19 +80,26 @@ var arena = Class.create({
 });
 
 var item = Class.create({
-    initialize: function(x, y) {
-        this.x = x;
-        this.y = y;
+    initialize: function(width, height) {
+        this.setwidth(width);
+        this.setheight(height);
         this.velx = .1;
         this.vely = .1;
-        this.width = 10;
-        this.height = 10;
         this.arena = null;
-        this.gravity_accel = 1.15;
-        this.negligible_vely = .3;
         this.red = Math.floor(Math.random() * 255);
         this.blue = Math.floor(Math.random() * 255);
         this.green = Math.floor(Math.random() * 255);
+    },
+
+    add_to_arena: function(arena, x, y) {
+        this.arena = arena;
+        if (x === undefined)
+            x = Math.floor(Math.random() * (this.arena.width - this.width));
+        if (y === undefined)
+            y = Math.floor(Math.random() * (this.arena.height - (2 * this.width))) + this.width;
+
+        this.x = x;
+        this.y = y;
     },
 
     motion: function() {
@@ -124,18 +130,30 @@ var item = Class.create({
     gravity: function() {
         //inflict gravity
         var absvely = Math.abs(this.vely);
-        var delta_y = Math.abs(absvely - (absvely * this.gravity_accel));
+        var delta_y = Math.abs(absvely - (absvely * this.arena.gravity_accel));
         this.vely += delta_y;
 
         //handle the apex of a bounce
-        if (Math.abs(this.vely) <= this.negligible_vely)
-            this.vely = this.negligible_vely;
+        if (Math.abs(this.vely) <= this.arena.negligible_vely)
+            this.vely = this.arena.negligible_vely;
     },
     
     //set random +y velocity, random +/-x velocity
     bounce: function() {
         this.setvely(Math.random() * -75);
         this.setvelx((Math.random() * 10) - 5);
+    },
+
+    setwidth: function(width) {
+        if (width === undefined)
+            width = Math.floor(Math.random() * 15) + 5;
+        this.width = width;
+    },
+    
+    setheight: function(height) {
+        if (height === undefined)
+            height = Math.floor(Math.random() * 15) + 5;
+        this.height = height;
     },
 
     setvely: function(vely) {
@@ -160,27 +178,38 @@ var item = Class.create({
 });
 
 var square = Class.create(item, {
-    initialize: function($super, x, y) {
-        $super(x, y);
+    initialize: function($super, width, height) {
+        $super(width, height);
     },
-    
+
     draw: function(ctx) {
         ctx.fillStyle = this.getrgb();
-        ctx.fillRect(this.x, this.y, 10, 10);
+        ctx.fillRect(this.x, this.y, this.width, this.height);
     }
 });
 
 var circle = Class.create(item, {
-    initialize: function($super, x, y) {
-        $super(x, y);
-        this.radius = this.width / 2;
+    initialize: function($super, diameter) {
+        $super(diameter, diameter);
+        this.diameter = this.width;
+    },
+
+    //setwidth == setheight for circles
+    setwidth: function($super, width) {
+        this.diameter = width;
+        $super(width);
     },
     
+    setheight: function($super, height) {
+        this.diameter = height;
+        $super(height);
+    },
+
     draw: function(ctx) {
         ctx.fillStyle = this.getrgb();
         ctx.beginPath();
-        ctx.arc(this.x + this.radius, this.y + this.radius, this.radius,
-                0, 2 * Math.PI, false);
+        var r = this.diameter / 2;
+        ctx.arc(this.x + r, this.y + r, r, 0, 2 * Math.PI, false);
         ctx.fill();
     }
 });
