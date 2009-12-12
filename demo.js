@@ -17,23 +17,26 @@ var game = Class.create({
                                 this.canvas.height);
         this.arena1.set_has_gravity(false);
 
-        var disc1 = new disc();
-        var spin1 = Math.floor(Math.random() * 200) - 100;
-        disc1.set_spin(spin1);
-        this.arena1.add_item(disc1, 100, 100);
+        //for (var i = 0; i < 50; i++) {
+        //    var star1 = new star();
+        //    this.arena1.add_item(star1);
+        //}
         
-        var ball1 = new ball();
-        this.arena1.add_item(ball1, 300, 110);
-        ball1.velx = 5;
-    
         setInterval("game1.draw()", 1000 / this.fps);
     },
     
     draw: function() {
+        if (Math.random() < .8) {
+            var star1 = new star();
+            var x = ((Math.random() * 100) - 50) + (this.arena1.width / 2);
+            var y = ((Math.random() * 100) - 50) + (this.arena1.height / 2);
+            this.arena1.add_item(star1, x, y);
+        }     
+        
         this.arena1.motion();
         this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
         this.arena1.draw();
-        this.arena1.detect_collisions();
+        //this.arena1.detect_collisions();
     }
 });
 
@@ -45,7 +48,8 @@ var arena = Class.create({
         this.items = new Array();
         this.gravity_accel = 1.15;
         this.negligible_vely = .3;
-        this.has_gravity = 1;
+        this.has_gravity = false;
+        this.has_zoom = true;
     },
 
     add_item: function(myitem, x, y) {
@@ -109,7 +113,7 @@ var arena = Class.create({
                      (y2_bot >= y1_top && y2_bot <= y1_bot))) {
                     //item1.collide(item2);
                     //item2.collide(item1);
-                    alert("collision");
+                    //alert("collision");
                 }
             }
         }
@@ -124,6 +128,7 @@ var item = Class.create({
         this.vely = 0;
         this.arena = null;
         this.setcolor();
+        this.wall_bounce = false;
     },
 
     add_to_arena: function(arena, x, y) {
@@ -135,15 +140,44 @@ var item = Class.create({
 
         this.x = x;
         this.y = y;
+        
+        if (this.arena.has_zoom)
+            this.zoom_mult = (Math.random() * .9) + .1;
     },
 
+    zoom: function() {
+        var multiplier = .2;
+        
+        this.velx = this.zoom_mult * multiplier * (this.x - (this.arena.width / 2));
+        this.vely = this.zoom_mult * multiplier * (this.y - (this.arena.height / 2));
+        
+        //slower moving items will scale faster
+        var scale_factor = 1 - ((this.zoom_mult * 2) - 1);
+        
+        //items closer to sides scale faster
+        var x_dist = Math.abs((this.arena.width / 2) - this.x) / this.arena.width;
+        var y_dist = Math.abs((this.arena.height / 2) - this.y) / this.arena.height;
+        var avg_dist = (x_dist + y_dist) / 2;
+        
+        var scale = scale_factor * avg_dist * 5;
+        
+        this.diameter = Math.min(6, scale * this.width);
+    },
+    
     motion: function() {
         if (this.arena.has_gravity)
             this.gravity();
+        else if (this.arena.has_zoom)
+            this.zoom();
         
         this.y += this.vely;
         this.x += this.velx;
         
+        if (this.wall_bounce)
+            this.bounce();
+    },
+
+    bounce: function() {
         //bounce off top
         if (this.y <= 0) {
             this.y = 0;
@@ -263,31 +297,13 @@ var circle = Class.create(item, {
     }
 });
 
-var ball = Class.create(circle, {
-    initialize: function($super) {
-        $super(10);
-    }
-});
-
-var disc = Class.create(circle, {
-    initialize: function($super) {
-        $super(30);
-    },
-    
-    set_spin: function(spinval) {
-        this.spin = spinval;
-        
-        var red = 150;
-        var green = 150;
-        var blue = 150;
-        
-        if (spinval > 0) {
-            red += 25 + Math.floor(this.spin / 2);
-        } else {
-            blue += 25 + Math.floor(this.spin / -2);
-        }
-
-        this.setcolor(red, green, blue);
+var star = Class.create(circle, {
+    initialize: function($super, diameter, x, y) {
+        if (diameter == undefined)
+            //diameter = Math.floor(Math.random() * 3) + 2;
+            diameter = 3;
+        $super(diameter);
+        this.setcolor(250, 250, 250);
     }
 });
 
