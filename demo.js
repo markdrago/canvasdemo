@@ -58,9 +58,9 @@ var arena = Class.create({
     },
 
     rm_item: function(myitem) {
-        myitem.arena = null;
         var idx = this.items.indexOf(myitem);
         if (idx != undefined) {
+            myitem.arena = null;
             this.items.splice(idx, 1);
         }
     },
@@ -73,14 +73,22 @@ var arena = Class.create({
     },
 
     motion: function() {
+        var myarena = this;
+        var rm_items = new Array();
         this.items.each(function(myitem) {
             myitem.motion();
 
             //remove items that are off the canvas
-            if (myitem.getx() > this.width ||
-                myitem.gety() > this.height) {
-                this.rm_item(myitem);
+            if (myitem.getx() >= myarena.width ||
+                myitem.getx() <= 0 ||
+                myitem.gety() >= myarena.height ||
+                myitem.gety() <= 0) {
+                rm_items.push(myitem);
             }
+        });
+        
+        rm_items.each(function(myitem) {
+            myarena.rm_item(myitem);
         });
     },
     
@@ -142,26 +150,32 @@ var item = Class.create({
         this.y = y;
         
         if (this.arena.has_zoom)
-            this.zoom_mult = (Math.random() * .9) + .1;
+            this.speed = (Math.random() * .5) + .1;
     },
 
     zoom: function() {
         var multiplier = .2;
+        var max_diam = 4;
         
-        this.velx = this.zoom_mult * multiplier * (this.x - (this.arena.width / 2));
-        this.vely = this.zoom_mult * multiplier * (this.y - (this.arena.height / 2));
+        this.velx = this.speed * multiplier * (this.x - (this.arena.width / 2));
+        this.vely = this.speed * multiplier * (this.y - (this.arena.height / 2));
+        
+        if (this.diameter >= max_diam)
+            return;
         
         //slower moving items will scale faster
-        var scale_factor = 1 - ((this.zoom_mult * 2) - 1);
+        var scale_factor = 1 - ((this.speed * 2) - 1);
         
         //items closer to sides scale faster
-        var x_dist = Math.abs((this.arena.width / 2) - this.x) / this.arena.width;
-        var y_dist = Math.abs((this.arena.height / 2) - this.y) / this.arena.height;
+        var x_dist = Math.max(1, Math.abs((this.arena.width / 2) - this.x));
+        x_dist /= this.arena.width;
+        var y_dist = Math.max(1, Math.abs((this.arena.height / 2) - this.y));
+        y_dist /= this.arena.height;
+
         var avg_dist = (x_dist + y_dist) / 2;
-        
         var scale = scale_factor * avg_dist * 5;
         
-        this.diameter = Math.min(6, scale * this.width);
+        this.diameter = Math.min(max_diam, scale * this.width);
     },
     
     motion: function() {
